@@ -6,15 +6,15 @@ from scipy import signal
 # and https://towardsdatascience.com/how-to-build-your-own-neural-network-from-scratch-in-python-68998a08e4f6
 
 in_len = 100
-X = np.random.randn(1,in_len) 
+X = np.random.randn(1,in_len) * 0 + 0.5
 
 # NOTE: input pulse could be a variable as well in training with gprMax
 
 
 # NOTE: Needs to be normalized to work, WHY?
 # NOTE: Does not work with negative values?
-delays=np.random.uniform(low=0.1, high=0.9, size=(1,3))#[0.1, 0.67, 0.2, 0.5, 0.3]
-scales=np.random.uniform(low=0.1, high=0.9, size=(1,3))#[0.1, 0.0, 0.85,0.9, 0.4]
+delays=np.random.uniform(low=0.05, high=0.95, size=(1,50))#[0.1, 0.67, 0.2, 0.5, 0.3]
+scales=np.random.uniform(low=0.05, high=0.95, size=(1,50))#[0.1, 0.0, 0.85,0.9, 0.4]
 y=np.array([delays, scales])  
 y=y.reshape((1,2*delays.shape[1]))
 y_t = np.zeros((1,2*delays.shape[1]+1))
@@ -35,7 +35,9 @@ def feedforward_modelbased(delay):
     LEN = int(delay.shape[1]/2)
 
     for i in range(LEN):
-        scale = delay[0][LEN + i] - 0.5
+        scale = delay[0][LEN + i] - 0.5 
+        # Add scale noise
+        scale += 1e-7*np.random.randn()
         # Add delay and scaling
         delay_scaled =  scale * np.roll(temp, int((in_len*delay).round()[0][i])) 
         # Add exponential damping
@@ -44,7 +46,7 @@ def feedforward_modelbased(delay):
         out += delay_scaled
 
         # Adding noise
-        out += 1e-2*np.random.randn(1,in_len)
+        out += 1e-5*np.random.randn(1,in_len)
 
     return out
 
@@ -108,7 +110,7 @@ class NeuralNetwork:
 NN = NeuralNetwork(X,y)
 loss_arr = []
 loop_N = 10000
-eps = 1e-4
+eps = 1e-3
 for i in range(loop_N): # trains the NN 1,000 times
     #if i % 100 ==0: 
     if loop_N <= 100:
@@ -125,6 +127,13 @@ for i in range(loop_N): # trains the NN 1,000 times
     NN.train(X, y)
     act_loss = np.mean(np.square(X[0] - feedforward_modelbased(y)[0]))
     loss_arr.append(float(act_loss))
+    print ("Actual loss: \n" + str(act_loss)) # mean sum squared loss
+    print ("\n")
+    
+    # Decay of learning rate
+    NN.lr = 1 / np.log(10 + i) 
+
+
     if loop_N <= 1000:
         plt.clf()
         plt.subplot(211)
@@ -145,7 +154,7 @@ for i in range(loop_N): # trains the NN 1,000 times
         print(f"Early stopping after itr: {i}")
         break
 
-
+#print()
 plt.plot(feedforward_modelbased(y)[0],'b')
 plt.plot(X[0],'r--')
 plt.legend(['label','pred'])

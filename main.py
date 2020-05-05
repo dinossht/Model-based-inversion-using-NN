@@ -139,10 +139,3 @@ plt.show()
 plt.plot(loss_arr)
 plt.show()
 
-
-"""
-t = np.linspace(-1, 1, 2 * 100, endpoint=False)
-i, q, e = signal.gausspulse(t, fc=5, retquad=True, retenv=True)
-plt.plot(t, i, t, q, t, e, '--')
-plt.show()
-"""
