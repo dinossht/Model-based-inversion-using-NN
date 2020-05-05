@@ -4,13 +4,16 @@ from scipy import signal
 # based on https://gist.github.com/maunashjani/922e5a2a60130367dc58f1ee1fd6da36
 # and https://towardsdatascience.com/how-to-build-your-own-neural-network-from-scratch-in-python-68998a08e4f6
 
-in_len = 20
+in_len = 100
 X = np.random.randn(1,in_len) 
+
+# NOTE: input pulse could be a variable as well in training with gprMax
+
 
 # NOTE: Needs to be normalized to work, WHY?
 # NOTE: Does not work with negative values?
-delays=np.random.uniform(low=0.1, high=0.9, size=(1,20))#[0.1, 0.67, 0.2, 0.5, 0.3]
-scales=np.random.uniform(low=0.1, high=0.9, size=(1,20))#[0.1, 0.0, 0.85,0.9, 0.4]
+delays=np.random.uniform(low=0.1, high=0.9, size=(1,100))#[0.1, 0.67, 0.2, 0.5, 0.3]
+scales=np.random.uniform(low=0.1, high=0.9, size=(1,100))#[0.1, 0.0, 0.85,0.9, 0.4]
 y=np.array([delays, scales])  
 y=y.reshape((1,2*delays.shape[1]))
 out_size = y.shape[1]
@@ -89,7 +92,8 @@ class NeuralNetwork:
 
 NN = NeuralNetwork(X,y)
 loss_arr = []
-loop_N = 500
+loop_N = 50
+eps = 1e-5
 for i in range(loop_N): # trains the NN 1,000 times
     #if i % 100 ==0: 
     if loop_N <= 100:
@@ -97,10 +101,10 @@ for i in range(loop_N): # trains the NN 1,000 times
         print ("Input : \n" + str(X))
         print ("Actual Output: \n" + str(y))
         print ("Predicted Output: \n" + str(NN.feedforward(X)))
-        loss = str(np.mean(np.square(y - NN.feedforward(X))))
-        loss_arr.append(float(loss))
-        print ("Loss: \n" + loss) # mean sum squared loss
-        print ("\n")
+    loss = str(np.mean(np.square(y - NN.feedforward(X))))
+    loss_arr.append(float(loss))
+    print ("Loss: \n" + loss) # mean sum squared loss
+    print ("\n")
     
     X = feedforward_modelbased(NN.feedforward(X))
     NN.train(X, y)
@@ -120,6 +124,10 @@ for i in range(loop_N): # trains the NN 1,000 times
         plt.tight_layout()
         plt.draw()
         plt.pause(0.01)
+    
+    if np.mean(np.square(X[0] - feedforward_modelbased(y)[0])) <= eps:
+        print(f"Early stopping after itr: {i}")
+        break
 
 
 plt.plot(feedforward_modelbased(y)[0],'b')
